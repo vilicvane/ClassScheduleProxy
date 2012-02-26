@@ -1,0 +1,124 @@
+﻿[Encoding]
+gb2312
+
+[LoginUrl]
+{BaseUrl}_data/index_LOGIN.aspx
+
+[LoginVerifierUrl]
+{BaseUrl}sys/ValidateCode.aspx
+
+[LoginMethod]
+POST
+
+[LoginParams][]
+Sel_Type=STU
+UserID={Username}
+PassWord={Password}
+cCode={Verifier}
+
+[LoginErrorKeys][]
+账号或密码不正确,UsernamePasswordMismatch
+验证码错误,VerifierMismatch
+
+[LoginSuccessKey]
+正在加载权限数据
+
+[PreFetchUrl]
+{BaseUrl}znpk/Pri_StuSel.aspx
+
+[PreFetchMethod]
+GET
+
+[PreFetchParams][]
+
+[PreFetchRegexes][]
+<select name='Sel_XNXQ'.+?<option value='(.+?)'[1]
+
+[FetchUrl]
+{BaseUrl}znpk/Pri_StuSel_rpt.aspx
+
+[FetchMethod]
+POST
+
+[FetchParams][]
+Sel_XNXQ={PreFetchValues[0]}
+rad=1
+px=0
+
+[RowsRegex]
+<TABLE [\s\S]+?(?:<tr class=[^BH]>[\s\S]+?)((?:<tr class=[BH]>[\s\S]+?</tr>)+)<tr .+?</table>[1]
+
+[CellsRegex]
+<tr class=[BH]>([\s\S]+?)</tr>[1]
+
+[CellValueRegex]
+<td(?:\s[^>]*)?>(?:<a .+?>)?([\s\S]*?)(?:</a>)?<br></td>[1]
+
+[GetClassesScript]{"
+var weekTable = {
+	"日": 0,
+	"一": 1,
+	"二": 2,
+	"三": 3,
+	"四": 4,
+	"五": 5,
+	"六": 6
+};
+
+function getClasses(rows) {
+	var classesMap = {};
+	var name;
+	for (var i = 0; i < rows.length; i++) {
+		var cells = rows[i];
+		var item;
+		if (cells[1])
+			name = cells[1].match(/\[\d+\](.+)/)[1];
+
+		var list = classesMap.hasOwnProperty(name) ? classesMap[name] : classesMap[name] = [];
+		item = {
+			teacher: !cells[1] && !cells[9] ? list[list.length - 1].teacher : cells[9],
+			weeks: getNumbers(cells[10]),
+			location: cells[12]
+		};
+
+		//days and sessions
+		var dsGroups = cells[11].match(/([日一二三四五六])\[(.+)节\]/);
+		item.dayOfWeek = weekTable[dsGroups[1]];
+		item.sessions = getNumbers(dsGroups[2]);
+	
+		list.push(item);
+	}
+
+	var classes = [];
+	for (var name in classesMap)
+		if (classesMap.hasOwnProperty(name))
+			classes.push({
+				name: name,
+				classes: classesMap[name]
+			});
+	
+	return classes;
+}
+/*
+function copy(o) {
+	var c = o instanceof Array ? [] : {};
+	for (var i in o)
+		if (o.hasOwnProperty(i))
+			c[i] = o[i] instanceof Object ? copy(o[i]) : o[i];
+	return c;
+}
+*/
+function getNumbers(str) {
+    var nums = [];
+    var periods = str.split(",");
+    for (var i = 0, period; period = periods[i]; i++) {
+        var ns = period.split("-");
+        var start = Number(ns[0]);
+        var end = (ns.length > 1 ? Number(ns[1]) : start) + 1;
+        for (var i = start; i < end; i++)
+            nums.push(i);
+    }
+    return nums;
+}
+"}
+
