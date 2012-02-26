@@ -6,13 +6,21 @@ using System.Text.RegularExpressions;
 using System.IO;
 
 public static class Solution {
+    public static DateTime lastRulesCacheTime = new DateTime(0);
+    public static DateTime lastInfoCacheTime = new DateTime(0);
     private static Dictionary<string, Dictionary<string, object>> rulesCache = new Dictionary<string, Dictionary<string, object>>();
     private static Dictionary<int, SolutionInfo> solutionInfoCache = new Dictionary<int, SolutionInfo>();
     private static Regex itemRE = new Regex(@"\[(.+?)\](?:\n(?:(.+?)\n)?|\{""\n([\s\S]*?)\n""\}\n|(\[\])\n(?:(.[\s\S]*?)\n)?)(?:\n|$)");
 
     public static Dictionary<string, object> GetRules(string solution) {
-        //if (cache.ContainsKey(id))
-        //    return cache[id];
+        var now = DateTime.Now;
+        if ((now - lastRulesCacheTime).TotalMinutes > 15) {
+            rulesCache.Clear();
+            lastRulesCacheTime = now;
+        }
+
+        if (rulesCache.ContainsKey(solution))
+            return rulesCache[solution];
 
         var path = HttpContext.Current.Server.MapPath("Universities/Rules/" + solution);
 
@@ -39,6 +47,12 @@ public static class Solution {
     }
 
     public static SolutionInfo GetSolutionInfo(int universityId) {
+        var now = DateTime.Now;
+        if ((now - lastInfoCacheTime).TotalMinutes > 15) {
+            solutionInfoCache.Clear();
+            lastInfoCacheTime = now;
+        }
+
         if (solutionInfoCache.ContainsKey(universityId))
             return solutionInfoCache[universityId];
 
@@ -48,12 +62,15 @@ public static class Solution {
             var line = reader.ReadLine();
             if (line.StartsWith(start)) {
                 var items = line.Split(';');
-                return new SolutionInfo() {
+                var info = new SolutionInfo() {
                     Name = items[1],
                     BaseUrl = items[3]
                 };
+                solutionInfoCache[universityId] = info;
+                return info;
             }
         }
+
         return null;
     }
 
