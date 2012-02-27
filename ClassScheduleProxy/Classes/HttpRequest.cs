@@ -21,10 +21,13 @@ namespace ClassScheduleProxy {
         public string ContentType { get { return request.ContentType; } set { request.ContentType = value; } }
 
         public HttpStatusCode StatusCode { get { return response.StatusCode; } }
+
+        private string responseText;
         public string ResponseText {
             get {
-                ResponseStream.Position = 0;
-                return new StreamReader(ResponseStream, encoding).ReadToEnd();
+                if (responseText == null)
+                    responseText = new StreamReader(ResponseStream, encoding).ReadToEnd();
+                return responseText;
             }
         }
         public Stream ResponseStream { get { return response.GetResponseStream(); } }
@@ -39,6 +42,7 @@ namespace ClassScheduleProxy {
             request.CookieContainer = CookieContainer;
 
             response = null;
+            responseText = null;
         }
 
         public void Send(NameValueCollection data, Encoding encoding) {

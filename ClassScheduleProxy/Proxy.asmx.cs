@@ -181,10 +181,10 @@ namespace ClassScheduleProxy {
             var encoding = Encoding.GetEncoding(rules["Encoding"] as string);
 
             var queryVariables = new Dictionary<string, object>() {
-                    {"Username", username},
-                    {"Password", password},
-                    {"Verifier", verifier}
-                };
+                {"Username", username},
+                {"Password", password},
+                {"Verifier", verifier}
+            };
 
             //login
             new Action(() => {
