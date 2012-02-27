@@ -11,6 +11,8 @@ using System.Text.RegularExpressions;
 using System.Runtime.Serialization.Json;
 using Microsoft.JScript;
 using System.Runtime.Serialization;
+using System.Drawing;
+using System.Drawing.Imaging;
 
 namespace ClassScheduleProxy {
     /*
@@ -150,13 +152,19 @@ namespace ClassScheduleProxy {
 
             Session.Add("CookieContainer", request.CookieContainer);
 
-            var context = HttpContext.Current;
-            context.Response.ContentType = "image/jpeg";
-
+            Context.Response.ContentType = "image/png";
+            /*
             var buffer = new byte[1024];
             var size = 0;
             while ((size = stream.Read(buffer, 0, 1024)) > 0)
                 context.Response.BinaryWrite(buffer.Take(size).ToArray());
+             */
+
+            var image = Image.FromStream(stream);
+
+            var mStream = new MemoryStream();
+            image.Save(mStream, ImageFormat.Png);
+            Context.Response.BinaryWrite(mStream.ToArray());
         }
 
         [WebMethod(EnableSession = true)]
