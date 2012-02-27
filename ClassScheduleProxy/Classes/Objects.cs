@@ -10,14 +10,32 @@ using System.Text;
 using Microsoft.JScript;
 
 namespace ClassScheduleProxy {
+    [DataContract]
+    public class Session {
+        [DataMember]
+        public TimeSpan StartTime;
+        [DataMember]
+        public TimeSpan EndTime;
+    }
+
+    [DataContract]
+    public class SessionPeriod {
+        [DataMember]
+        public string Name;
+        [DataMember]
+        public Session[] Sessions;
+    }
+
+    [DataContract]
     public class UniversityInfo {
-        //public int Id;
-        //public string Name;
+        [DataMember]
         public bool HasVerifier;
-        public string FirstWeek;
+        [DataMember]
+        public DateTime FirstWeek;
+        [DataMember]
         public int WeekCount;
-        public string Sessions;
-        //public string BaseUrl;
+        [DataMember]
+        public SessionPeriod[] SessionPeriods;
     }
 
     public class UniversityListInfo {

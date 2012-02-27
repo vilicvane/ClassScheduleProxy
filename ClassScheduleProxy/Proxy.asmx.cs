@@ -13,24 +13,29 @@ using Microsoft.JScript;
 using System.Runtime.Serialization;
 
 namespace ClassScheduleProxy {
+
     [DataContract]
-    class Response {
+    class ListUniversitiesResponse {
         [DataMember]
-        public string Error;
+        public string Error = null;
         [DataMember]
-        public object Data;
+        public UniversityListInfo[] Data = null;
     }
 
-    class ListUniversitiesResponse : Response {
-        public UniversityListInfo[] Data;
+    [DataContract]
+    class GetUniversityInfoResponse {
+        [DataMember]
+        public string Error = null;
+        [DataMember]
+        public UniversityInfo Data = null;
     }
 
-    class GetUniversityInfoResponse : Response {
-        public UniversityInfo Data;
-    }
-
-    class FetchClassesResponse : Response {
-        public ClassInfo[] Data;
+    [DataContract]
+    class FetchClassesResponse {
+        [DataMember]
+        public string Error = null;
+        [DataMember]
+        public ClassInfo[] Data = null;
     }
 
     /// <summary>
@@ -56,19 +61,47 @@ namespace ClassScheduleProxy {
             universityInfoJsonCache.Clear();
             var lines = File.ReadAllLines(Context.Server.MapPath("Universities/List"));
             var list = new List<UniversityListInfo>();
+
             foreach (var line in lines) {
                 var items = line.Split(';');
                 var id = int.Parse(items[0]);
+                var names = new string[] { "morning", "afternoon", "evening" };
+                var periods = items[7].Split('/');
+
+                var sPeriods = new SessionPeriod[names.Length];
+
+                for (int i = 0; i < periods.Length; i++) {
+                    var pName = names[i];
+                    var sStrs = periods[i].Split(',');
+
+                    var ss = new Session[sStrs.Length];
+                    for (var j = 0; j < sStrs.Length; j++) {
+                        var sStr = sStrs[j];
+                        var start = sStr.Substring(0, 4).Insert(2, ":");
+                        var end = sStr.Substring(4, 4).Insert(2, ":");
+                        ss[j] = new Session() {
+                            StartTime = TimeSpan.Parse(start),
+                            EndTime = TimeSpan.Parse(end)
+                        };
+                    }
+
+                    sPeriods[i] = new SessionPeriod() {
+                        Name = pName,
+                        Sessions = ss
+                    };
+                }
+
                 universityInfoJsonCache[id] = Json.Stringify(new GetUniversityInfoResponse() {
                     Data = new UniversityInfo() {
                         //Id = int.Parse(items[0]),
                         //Name = items[4],
                         HasVerifier = items[2] == "1",
-                        FirstWeek = items[5],
+                        FirstWeek = DateTime.Parse(items[5]),
                         WeekCount = int.Parse(items[6]),
-                        Sessions = items[7]
+                        SessionPeriods = sPeriods
                     }
                 });
+
                 list.Add(new UniversityListInfo() {
                     Id = id,
                     Name = items[4]
