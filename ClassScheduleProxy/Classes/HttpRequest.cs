@@ -21,7 +21,12 @@ namespace ClassScheduleProxy {
         public string ContentType { get { return request.ContentType; } set { request.ContentType = value; } }
 
         public HttpStatusCode StatusCode { get { return response.StatusCode; } }
-        public string ResponseText { get { return new StreamReader(ResponseStream, encoding).ReadToEnd(); } }
+        public string ResponseText {
+            get {
+                ResponseStream.Position = 0;
+                return new StreamReader(ResponseStream, encoding).ReadToEnd();
+            }
+        }
         public Stream ResponseStream { get { return response.GetResponseStream(); } }
 
         public HttpRequest() {

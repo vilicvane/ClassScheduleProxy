@@ -13,7 +13,7 @@ using Microsoft.JScript;
 using System.Runtime.Serialization;
 
 namespace ClassScheduleProxy {
-
+    /*
     [DataContract]
     class ListUniversitiesResponse {
         [DataMember]
@@ -37,7 +37,7 @@ namespace ClassScheduleProxy {
         [DataMember]
         public ClassInfo[] Data = null;
     }
-
+    */
     /// <summary>
     /// Summary description for Proxy
     /// </summary>
@@ -48,8 +48,8 @@ namespace ClassScheduleProxy {
     public class Proxy : System.Web.Services.WebService {
 
         public static DateTime lastCacheTime = new DateTime(0);
-        public static Dictionary<int, string> universityInfoJsonCache = new Dictionary<int, string>();
-        public static string universityListJson;
+        public static Dictionary<int, UniversityInfo> universityInfoCache = new Dictionary<int, UniversityInfo>();
+        public static UniversityListInfo[] universityList;
 
         public Proxy() {
             var now = DateTime.Now;
@@ -58,14 +58,14 @@ namespace ClassScheduleProxy {
 
             lastCacheTime = now;
 
-            universityInfoJsonCache.Clear();
+            universityInfoCache.Clear();
             var lines = File.ReadAllLines(Context.Server.MapPath("Universities/List"));
             var list = new List<UniversityListInfo>();
 
             foreach (var line in lines) {
                 var items = line.Split(';');
                 var id = int.Parse(items[0]);
-                var names = new string[] { "morning", "afternoon", "evening" };
+                var names = new string[] { "Morning", "Afternoon", "Evening" };
                 var periods = items[7].Split('/');
 
                 var sPeriods = new SessionPeriod[names.Length];
@@ -80,8 +80,8 @@ namespace ClassScheduleProxy {
                         var start = sStr.Substring(0, 4).Insert(2, ":");
                         var end = sStr.Substring(4, 4).Insert(2, ":");
                         ss[j] = new Session() {
-                            StartTime = TimeSpan.Parse(start),
-                            EndTime = TimeSpan.Parse(end)
+                            StartTime = start,
+                            EndTime = end
                         };
                     }
 
@@ -91,16 +91,14 @@ namespace ClassScheduleProxy {
                     };
                 }
 
-                universityInfoJsonCache[id] = Json.Stringify(new GetUniversityInfoResponse() {
-                    Data = new UniversityInfo() {
-                        //Id = int.Parse(items[0]),
-                        //Name = items[4],
-                        HasVerifier = items[2] == "1",
-                        FirstWeek = DateTime.Parse(items[5]),
-                        WeekCount = int.Parse(items[6]),
-                        SessionPeriods = sPeriods
-                    }
-                });
+                universityInfoCache[id] = new UniversityInfo() {
+                    Id = id,
+                    Name = items[4],
+                    HasVerifier = items[2] == "1",
+                    FirstWeek = DateTime.Parse(items[5]),
+                    WeekCount = int.Parse(items[6]),
+                    SessionPeriods = sPeriods
+                };
 
                 list.Add(new UniversityListInfo() {
                     Id = id,
@@ -108,31 +106,22 @@ namespace ClassScheduleProxy {
                 });
             }
 
-            universityListJson = Json.Stringify(new ListUniversitiesResponse() {
-                Data = list.ToArray()
-            });
+            universityList = list.ToArray();
             //Uncomment the following line if using designed components 
             //InitializeComponent(); 
         }
 
+
         [WebMethod]
-        public void ListUniversities() {
-            Context.Response.ContentType = "application/json";
-            Context.Response.Write(universityListJson);
+        public UniversityListInfo[] ListUniversities() {
+            return universityList;
         }
 
         [WebMethod]
-        public void GetUniversityInfo(int universityId) {
-            Context.Response.ContentType = "application/json";
-
-            var json =
-                universityInfoJsonCache.ContainsKey(universityId) ?
-                universityInfoJsonCache[universityId] :
-                Json.Stringify(new GetUniversityInfoResponse() {
-                    Error = "UniversityIdNotFound"
-                });
-            
-            Context.Response.Write(json);
+        public UniversityInfo GetUniversityInfo(int universityId) {
+            if (!universityInfoCache.ContainsKey(universityId))
+                throw new Exception("UniversityIdNotFound");
+            return universityInfoCache[universityId];
         }
 
         [WebMethod(EnableSession = true)]
@@ -171,131 +160,120 @@ namespace ClassScheduleProxy {
         }
 
         [WebMethod(EnableSession = true)]
-        public void FetchClasses(int universityId, string username, string password, string verifier) {
-            Context.Response.ContentType = "application/json";
-            try {
+        public ClassInfo[] FetchClassInfos(int universityId, string username, string password, string verifier) {
+            var cookieContainer = Session["CookieContainer"] as CookieContainer;
 
-                var cookieContainer = Session["CookieContainer"] as CookieContainer;
+            var request = new HttpRequest();
+            if (cookieContainer != null)
+                request.CookieContainer = cookieContainer;
 
-                var request = new HttpRequest();
-                if (cookieContainer != null)
-                    request.CookieContainer = cookieContainer;
+            var solutionInfo = Solution.GetSolutionInfo(universityId);
+            var rules = solutionInfo.Rules;
 
-                var solutionInfo = Solution.GetSolutionInfo(universityId);
-                var rules = solutionInfo.Rules;
+            var encoding = Encoding.GetEncoding(rules["Encoding"] as string);
 
-                var encoding = Encoding.GetEncoding(rules["Encoding"] as string);
+            var queryVariables = new Dictionary<string, object>() {
+                    {"Username", username},
+                    {"Password", password},
+                    {"Verifier", verifier}
+                };
 
-                var queryVariables = new Dictionary<string, object>() {
-                {"Username", username},
-                {"Password", password},
-                {"Verifier", verifier}
-            };
+            //login
+            new Action(() => {
+                SendRequest(request, rules, solutionInfo.BaseUrl, "Login", queryVariables, encoding);
+                var text = request.ResponseText;
 
-                //login
-                new Action(() => {
-                    SendRequest(request, rules, solutionInfo.BaseUrl, "Login", queryVariables, encoding);
-                    var text = request.ResponseText;
+                var loginErrorKeys = rules["LoginErrorKeys"] as string[];
 
-                    var loginErrorKeys = rules["LoginErrorKeys"] as string[];
+                foreach (var keyInfo in loginErrorKeys) {
+                    var index = keyInfo.LastIndexOf(',');
+                    var key = keyInfo.Substring(0, index);
+                    var error = keyInfo.Substring(index + 1);
+                    if (text.Contains(key))
+                        throw new Exception(error);
+                }
 
-                    foreach (var keyInfo in loginErrorKeys) {
-                        var index = keyInfo.LastIndexOf(',');
-                        var key = keyInfo.Substring(0, index);
-                        var error = keyInfo.Substring(index + 1);
-                        if (text.Contains(key))
-                            throw new Exception(error);
+                if (!text.Contains(rules["LoginSuccessKey"] as string))
+                    throw new Exception("UnknownLoginError");
+            })();
+
+            //pre-fetch
+            new Action(() => {
+                SendRequest(request, rules, solutionInfo.BaseUrl, "PreFetch", queryVariables, encoding);
+                var text = request.ResponseText;
+
+                var preFetchValues = new List<string>();
+
+                var regexInfos = rules["PreFetchRegexes"] as string[];
+
+                foreach (var info in regexInfos) {
+                    var regexInfo = new RegexInfo(info);
+                    preFetchValues.Add(regexInfo.Match(text));
+                }
+
+                queryVariables["PreFetchValues"] = preFetchValues.ToArray();
+            })();
+
+            ClassInfo[] classInfos = null;
+            //fetch
+            new Action(() => {
+                SendRequest(request, rules, solutionInfo.BaseUrl, "Fetch", queryVariables, encoding);
+                var text = request.ResponseText;
+
+                var rowsRegexInfo = new RegexInfo(rules["RowsRegex"] as string);
+                var rowsStr = rowsRegexInfo.Match(text);
+
+                var cellsRegexInfo = new RegexInfo(rules["CellsRegex"] as string);
+                var tdsStrs = cellsRegexInfo.Matches(rowsStr);
+
+                var cellValueRegexInfo = new RegexInfo(rules["CellValueRegex"] as string);
+
+                var rows = new List<List<string>>();
+                foreach (var tdsStr in tdsStrs) {
+                    var cells = new List<string>();
+                    cells.AddRange(cellValueRegexInfo.Matches(tdsStr));
+                    rows.Add(cells);
+                }
+
+                var dataJson = Json.Stringify(rows);
+
+                var expression = string.Format("{0}\ngetClasses({1});", rules["GetClassesScript"] as string, dataJson);
+
+                //File.WriteAllText(@"C:\test.txt", expression);
+
+                var jsClassInfos = JScriptEvaluator.Evaluator.Eval(expression) as JSObject;
+                var length = (int)jsClassInfos["length"];
+
+                classInfos = new ClassInfo[length];
+
+                for (var i = 0; i < length; i++) {
+                    var jsInfo = jsClassInfos[i] as JSObject;
+
+                    var info = new ClassInfo();
+                    info.Name = jsInfo["name"] as string;
+                    var jsClasses = jsInfo["classes"] as JSObject;
+
+                    var cLength = (int)jsClasses["length"];
+                    var classes = new SubClassInfo[cLength];
+
+                    for (var j = 0; j < cLength; j++) {
+                        var jsCl = jsClasses[j] as JSObject;
+                        classes[j] = new SubClassInfo() {
+                            DayOfWeek = (int)jsCl["dayOfWeek"],
+                            Location = jsCl["location"] as string,
+                            Sessions = GetIntArray(jsCl["sessions"] as JSObject),
+                            Teacher = jsCl["teacher"] as string,
+                            Weeks = GetIntArray(jsCl["weeks"] as JSObject)
+                        };
                     }
 
-                    if (!text.Contains(rules["LoginSuccessKey"] as string))
-                        throw new Exception("UnknownLoginError");
-                })();
+                    info.Classes = classes;
+                    classInfos[i] = info;
+                }
 
-                //pre-fetch
-                new Action(() => {
-                    SendRequest(request, rules, solutionInfo.BaseUrl, "PreFetch", queryVariables, encoding);
-                    var text = request.ResponseText;
+            })();
 
-                    var preFetchValues = new List<string>();
-
-                    var regexInfos = rules["PreFetchRegexes"] as string[];
-
-                    foreach (var info in regexInfos) {
-                        var regexInfo = new RegexInfo(info);
-                        preFetchValues.Add(regexInfo.Match(text));
-                    }
-
-                    queryVariables["PreFetchValues"] = preFetchValues.ToArray();
-                })();
-
-                ClassInfo[] classInfos = null;
-                //fetch
-                new Action(() => {
-                    SendRequest(request, rules, solutionInfo.BaseUrl, "Fetch", queryVariables, encoding);
-                    var text = request.ResponseText;
-
-                    var rowsRegexInfo = new RegexInfo(rules["RowsRegex"] as string);
-                    var rowsStr = rowsRegexInfo.Match(text);
-
-                    var cellsRegexInfo = new RegexInfo(rules["CellsRegex"] as string);
-                    var tdsStrs = cellsRegexInfo.Matches(rowsStr);
-
-                    var cellValueRegexInfo = new RegexInfo(rules["CellValueRegex"] as string);
-
-                    var rows = new List<List<string>>();
-                    foreach (var tdsStr in tdsStrs) {
-                        var cells = new List<string>();
-                        cells.AddRange(cellValueRegexInfo.Matches(tdsStr));
-                        rows.Add(cells);
-                    }
-
-                    var dataJson = Json.Stringify(rows);
-
-                    var expression = string.Format("{0}\ngetClasses({1});", rules["GetClassesScript"] as string, dataJson);
-
-                    //File.WriteAllText(@"C:\test.txt", expression);
-
-                    var jsClassInfos = JScriptEvaluator.Evaluator.Eval(expression) as JSObject;
-                    var length = (int)jsClassInfos["length"];
-
-                    classInfos = new ClassInfo[length];
-
-                    for (var i = 0; i < length; i++) {
-                        var jsInfo = jsClassInfos[i] as JSObject;
-
-                        var info = new ClassInfo();
-                        info.Name = jsInfo["name"] as string;
-                        var jsClasses = jsInfo["classes"] as JSObject;
-
-                        var cLength = (int)jsClasses["length"];
-                        var classes = new SubClassInfo[cLength];
-
-                        for (var j = 0; j < cLength; j++) {
-                            var jsCl = jsClasses[j] as JSObject;
-                            classes[j] = new SubClassInfo() {
-                                DayOfWeek = (int)jsCl["dayOfWeek"],
-                                Location = jsCl["location"] as string,
-                                Sessions = GetIntArray(jsCl["sessions"] as JSObject),
-                                Teacher = jsCl["teacher"] as string,
-                                Weeks = GetIntArray(jsCl["weeks"] as JSObject)
-                            };
-                        }
-
-                        info.Classes = classes;
-                        classInfos[i] = info;
-                    }
-
-                })();
-
-                Context.Response.Write(Json.Stringify(new FetchClassesResponse() {
-                    Data = classInfos
-                }));
-            }
-            catch (Exception e) {
-                Context.Response.Write(Json.Stringify(new FetchClassesResponse() {
-                    Error = e.Message
-                }));
-            }
+            return classInfos;
         }
 
         private int[] GetIntArray(JSObject jsArray) {
