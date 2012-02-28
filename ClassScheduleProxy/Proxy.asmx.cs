@@ -113,6 +113,10 @@ namespace ClassScheduleProxy {
             //InitializeComponent(); 
         }
 
+        [WebMethod]
+        public void RemoveCache() {
+            lastCacheTime = new DateTime(0);
+        }
 
         [WebMethod]
         public UniversityListInfo[] ListUniversities() {
