@@ -101,8 +101,8 @@ function getNumbers(str) {
         var ns = period.split("-");
         var start = Number(ns[0]);
         var end = (ns.length > 1 ? Number(ns[1]) : start) + 1;
-        for (var i = start; i < end; i++)
-            nums.push(i);
+        for (var j = start; j < end; j++)
+            nums.push(j);
     }
     return nums;
 }

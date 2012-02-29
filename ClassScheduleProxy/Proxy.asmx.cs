@@ -251,7 +251,7 @@ namespace ClassScheduleProxy {
 
                 var expression = string.Format("{0}\ngetClasses({1});", rules["GetClassesScript"] as string, dataJson);
 
-                //File.WriteAllText(@"C:\test.txt", expression);
+                File.WriteAllText(@"C:\test.txt", expression);
 
                 var jsClassInfos = JScriptEvaluator.Evaluator.Eval(expression) as JSObject;
                 var length = (int)jsClassInfos["length"];
