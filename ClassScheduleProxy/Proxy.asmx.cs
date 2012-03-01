@@ -211,6 +211,8 @@ namespace ClassScheduleProxy {
 
             //pre-fetch
             new Action(() => {
+                if (rules["PreFetchUrl"] as string == "") return;
+
                 SendRequest(request, rules, solutionInfo.BaseUrl, "PreFetch", queryVariables, encoding);
                 var text = request.ResponseText;
 
@@ -253,8 +255,8 @@ namespace ClassScheduleProxy {
 
                 //File.WriteAllText(@"C:\test.txt", expression);
 
-                var jsClassInfos = JScriptEvaluator.Evaluator.Eval(expression) as JSObject;
-                var length = (int)jsClassInfos["length"];
+                var jsClassInfos = JScriptEvaluator.Evaluator.Eval(expression) as ArrayObject;
+                var length = (int)jsClassInfos.length;
 
                 classInfos = new ClassInfo[length];
 
@@ -263,19 +265,20 @@ namespace ClassScheduleProxy {
 
                     var info = new ClassInfo();
                     info.Name = jsInfo["name"] as string;
-                    var jsClasses = jsInfo["classes"] as JSObject;
+                    var jsClasses = jsInfo["classes"] as ArrayObject;
 
-                    var cLength = (int)jsClasses["length"];
+                    var cLength = (int)jsClasses.length;
                     var classes = new SubClassInfo[cLength];
 
                     for (var j = 0; j < cLength; j++) {
                         var jsCl = jsClasses[j] as JSObject;
+
                         classes[j] = new SubClassInfo() {
-                            DayOfWeek = (int)jsCl["dayOfWeek"],
+                            DayOfWeek = (int)(double)jsCl["dayOfWeek"],
                             Location = jsCl["location"] as string,
-                            Sessions = GetIntArray(jsCl["sessions"] as JSObject),
+                            Sessions = GetIntArray(jsCl["sessions"] as ArrayObject),
                             Teacher = jsCl["teacher"] as string,
-                            Weeks = GetIntArray(jsCl["weeks"] as JSObject)
+                            Weeks = GetIntArray(jsCl["weeks"] as ArrayObject)
                         };
                     }
 
@@ -288,8 +291,8 @@ namespace ClassScheduleProxy {
             return classInfos;
         }
 
-        private int[] GetIntArray(JSObject jsArray) {
-            var length = (int)jsArray["length"];
+        private int[] GetIntArray(ArrayObject jsArray) {
+            var length = (int)jsArray.length;
             var array = new int[length];
             for (var i = 0; i < length; i++)
                 array[i] = (int)(double)jsArray[i];

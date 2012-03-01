@@ -1,0 +1,120 @@
+﻿[Encoding]
+gb2312
+
+[LoginUrl]
+http://byjw.bupt.edu.cn:8080/jwLoginAction.do
+
+[LoginVerifierUrl]
+
+[LoginMethod]
+POST
+
+[LoginParams][]
+zjh={Username}
+mm={Password}
+type=sso
+
+[LoginErrorKeys][]
+证件号不存在,UsernamePasswordMismatch
+密码不正确,UsernamePasswordMismatch
+
+[LoginSuccessKey]
+学分制综合教务
+
+[PreFetchUrl]
+
+[PreFetchMethod]
+
+[PreFetchParams][]
+
+[PreFetchRegexes][]
+
+[FetchUrl]
+http://byjw.bupt.edu.cn:8080/xkAction.do
+
+[FetchMethod]
+GET
+
+[FetchParams][]
+actionType=6
+
+[RowsRegex]
+<table [^>]+ id="user">\s*<thead>[\s\S]+?</thead>([\s\S]+?)</table>[1]
+
+[CellsRegex]
+<tr(?:\s[^>]*)?>([\s\S]+?)</tr>[1]
+
+[CellValueRegex]
+<td(?:\s[^>]*)?>\s*&nbsp;\s*([\s\S]*?)\s*</td>[1,2]
+
+[GetClassesScript]{"
+function getClasses(rows) {
+	var classes = [];
+
+	var cl, name, teacher;
+	for (var i = 0; i < rows.length; i++) {
+		var cells = rows[i];
+		if (cells.length == 17) {
+			name = cells[2];
+			teacher = cells[7].replace("*", "");
+			cells.splice(0, 10);
+			cl = {
+				name: name,
+				classes: []
+			};
+			classes.push(cl);
+		}
+
+		cl.classes.push({
+			teacher: teacher,
+			weeks: getWeeks(cells[0]),
+			dayOfWeek: getDayOfWeek(cells[1]),
+			sessions: getSessions(cells[2], cells[3]),
+			location: cells[6]
+		});
+	}
+
+	return classes;
+}
+
+function getSessions(start, count) {
+	start = Number(start);
+	count = Number(count);
+	var sessions = [];
+	for (var i = 0; i < count; i++)
+		sessions.push(start++);
+	return sessions;
+}
+
+function getWeeks(description) {
+	var re = /(\d+)(?:-(\d+))?.+?(?:（([单双])周）)?$/;
+	var groups = description.match(re);
+	var start = Number(groups[1]);
+	var end = Number(groups[2]) + 1;
+
+	var d, mod;
+	if (groups[3]) {
+		d = 2;
+		mod = groups[3] == "单" ? 1 : 0;
+	}
+	else {
+		d = 1;
+		mod = 0;
+	}
+
+	var weeks = [];
+
+	for (var i = start; i < end; i++)
+		if (i % d == mod)
+			weeks.push(i)
+		
+	return weeks;
+}
+
+function getDayOfWeek(week) {
+	var week = Number(week);
+	if (week > 0 && week < 7) return week;
+	else return 0;
+}
+"}
+

@@ -18,6 +18,7 @@ cCode={Verifier}
 
 [LoginErrorKeys][]
 账号或密码不正确,UsernamePasswordMismatch
+帐号或密码不正确,UsernamePasswordMismatch
 验证码错误,VerifierMismatch
 
 [LoginSuccessKey]

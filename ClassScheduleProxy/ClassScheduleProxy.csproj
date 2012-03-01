@@ -81,6 +81,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Universities\List" />
+    <None Include="Universities\Rules\BUPT" />
     <None Include="Universities\Rules\Kingo2005" />
     <None Include="Universities\Rules\Kingo2012" />
   </ItemGroup>
