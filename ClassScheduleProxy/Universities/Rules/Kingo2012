@@ -100,15 +100,7 @@ function getClasses(rows) {
 	
 	return classes;
 }
-/*
-function copy(o) {
-	var c = o instanceof Array ? [] : {};
-	for (var i in o)
-		if (o.hasOwnProperty(i))
-			c[i] = o[i] instanceof Object ? copy(o[i]) : o[i];
-	return c;
-}
-*/
+
 function getNumbers(str) {
     var nums = [];
     var periods = str.split(",");

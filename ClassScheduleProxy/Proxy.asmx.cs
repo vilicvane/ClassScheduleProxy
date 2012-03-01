@@ -274,7 +274,7 @@ namespace ClassScheduleProxy {
                         var jsCl = jsClasses[j] as JSObject;
 
                         classes[j] = new SubClassInfo() {
-                            DayOfWeek = (int)(double)jsCl["dayOfWeek"],
+                            DayOfWeek = GetInt(jsCl["dayOfWeek"]),
                             Location = jsCl["location"] as string,
                             Sessions = GetIntArray(jsCl["sessions"] as ArrayObject),
                             Teacher = jsCl["teacher"] as string,
@@ -291,11 +291,18 @@ namespace ClassScheduleProxy {
             return classInfos;
         }
 
+        private int GetInt(object num) {
+            if (num is int)
+                return (int)num;
+            else
+                return (int)(double)num;
+        }
+
         private int[] GetIntArray(ArrayObject jsArray) {
             var length = (int)jsArray.length;
             var array = new int[length];
             for (var i = 0; i < length; i++)
-                array[i] = (int)(double)jsArray[i];
+                array[i] = GetInt(jsArray[i]);
             return array;
         }
 

@@ -113,7 +113,8 @@ function getWeeks(description) {
 
 function getDayOfWeek(week) {
 	var week = Number(week);
-	if (week > 0 && week < 7) return week;
+	if (week > 0 && week < 7)
+		return week;
 	else return 0;
 }
 "}
