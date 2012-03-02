@@ -78,12 +78,18 @@ function getClasses(rows) {
 		var list = classesMap.hasOwnProperty(name) ? classesMap[name] : classesMap[name] = [];
 		item = {
 			teacher: !cells[1] && !cells[9] ? list[list.length - 1].teacher : cells[9],
-			weeks: getNumbers(cells[10]),
 			location: cells[12]
 		};
 
 		//days and sessions
-		var dsGroups = cells[11].match(/([日一二三四五六])\[(.+)节\]/);
+		var dsGroups = cells[11].match(/([日一二三四五六])\[(.+)节\]([单双])?/);
+		var s = 0;
+		if (dsGroups[3] == "单")
+			s = 1;
+		else if (dsGroups[3] == "双")
+			s = 2;
+
+		item.weeks = getNumbers(cells[10], s);
 		item.dayOfWeek = weekTable[dsGroups[1]];
 		item.sessions = getNumbers(dsGroups[2]);
 	
@@ -101,7 +107,17 @@ function getClasses(rows) {
 	return classes;
 }
 
-function getNumbers(str) {
+function getNumbers(str, s) {
+	var d, mod;
+	if (s) {
+		d = 2;
+		mod = s == 1 ? 1 : 0;
+	}
+	else {
+		d = 1;
+		mod = 0;
+	}
+
     var nums = [];
     var periods = str.split(",");
     for (var i = 0, period; period = periods[i]; i++) {
@@ -109,7 +125,8 @@ function getNumbers(str) {
         var start = Number(ns[0]);
         var end = (ns.length > 1 ? Number(ns[1]) : start) + 1;
         for (var j = start; j < end; j++)
-            nums.push(j);
+			if (j % d == mod)
+				nums.push(j);
     }
     return nums;
 }
