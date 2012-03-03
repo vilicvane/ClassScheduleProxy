@@ -28,7 +28,11 @@ public class Proxy : System.Web.Services.WebService {
     public static UniversityListInfo[] universityList;
 
     public Proxy() {
+#if DEBUG
+        RemoveCache();
+#endif
         var now = DateTime.Now;
+
         if ((now - lastCacheTime).TotalMinutes < 15)
             return;
 
@@ -89,8 +93,12 @@ public class Proxy : System.Web.Services.WebService {
 
     [WebMethod]
     public void RemoveCache() {
-        lastCacheTime = new DateTime(0);
+        lastCacheTime =
+        Solution.lastRulesCacheTime =
+        Solution.lastInfoCacheTime = new DateTime(0);
+#if !DEBUG
         Context.Response.Write("Cache removed");
+#endif
     }
 
     [WebMethod]
@@ -119,7 +127,7 @@ public class Proxy : System.Web.Services.WebService {
         url = url.Replace("{BaseUrl}", solutionInfo.BaseUrl);
 
         var request = new HttpRequest();
-        request.Open("GET", url);
+        request.Open("GET", url, "");
         request.Send();
 
         if (request.StatusCode != HttpStatusCode.OK) {
@@ -226,10 +234,13 @@ public class Proxy : System.Web.Services.WebService {
 
             var dataJson = Json.Stringify(rows);
 
+
+#if DEBUG
+            var expression = string.Format("{0}\nvar result = getClasses({1});result;", rules["GetClassesScript"] as string, dataJson);
+            File.WriteAllText(@"C:\test.html", "<script>" + expression + "console.log(result);</script>");
+#else
             var expression = string.Format("{0}\ngetClasses({1});", rules["GetClassesScript"] as string, dataJson);
-
-            //File.WriteAllText(@"C:\test.txt", expression);
-
+#endif
             var jsClassInfos = JScriptEvaluator.Evaluator.Eval(expression) as ArrayObject;
             var length = (int)jsClassInfos.length;
 
@@ -294,14 +305,14 @@ public class Proxy : System.Web.Services.WebService {
         var method = rules[rulePrefix + "Method"] as string;
 
         if (method == "POST") {
-            request.Open(method, url);
+            request.Open(method, url, "");
             request.ContentType = "application/x-www-form-urlencoded";
             request.Send(query);
         }
         else {
             if (query != "")
                 url += "?" + query;
-            request.Open(method, url);
+            request.Open(method, url, "");
             request.Send();
         }
     }

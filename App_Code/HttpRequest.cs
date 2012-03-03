@@ -35,11 +35,16 @@ public class HttpRequest {
         CookieContainer = new CookieContainer();
     }
 
-    public void Open(string method, string url) {
+    public void Open(string method, string url, string referer = null) {
         request = WebRequest.Create(url) as HttpWebRequest;
         request.Method = method;
         request.CookieContainer = CookieContainer;
-
+        if (referer != null) {
+            if (referer == "")
+                request.Referer = url;
+            else
+                request.Referer = referer;
+        }
         response = null;
         responseText = null;
     }
@@ -72,7 +77,8 @@ public class HttpRequest {
         }
 
         var contentType = response.Headers[HttpResponseHeader.ContentType];
-        encoding = Encoding.GetEncoding(new Regex(@"(?:^|[^\w])charset=(.+?)(?:;|$)", RegexOptions.IgnoreCase).Match(contentType).Groups[1].Value);
+        var encodingName = new Regex(@"(?:^|[^\w])charset=(.+?)(?:;|$)", RegexOptions.IgnoreCase).Match(contentType).Groups[1].Value;
+        encoding = encodingName != "" ? Encoding.GetEncoding(encodingName) : Encoding.Default;
     }
 
     public static string GetQueryString(NameValueCollection data, Encoding encoding) {

@@ -45,7 +45,7 @@ actionType=6
 <tr(?:\s[^>]*)?>([\s\S]+?)</tr>[1]
 
 [CellValueRegex]
-<td(?:\s[^>]*)?>\s*&nbsp;\s*([\s\S]*?)\s*</td>[1,2]
+<td(?:\s[^>]*)?>\s*&nbsp;\s*([\s\S]*?)\s*</td>[1]
 
 [GetClassesScript]{"
 function getClasses(rows) {
