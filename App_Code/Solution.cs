@@ -70,7 +70,7 @@ public static class Solution {
                 return info;
             }
         }
-
+        reader.Close();
         return null;
     }
 

@@ -27,6 +27,7 @@ public class UniversityInfo {
     public DateTime FirstWeek;
     public int WeekCount;
     public SessionPeriod[] SessionPeriods;
+    public SessionPeriod[] SummerSessionPeriods;
 }
 
 public class UniversityListInfo {

@@ -45,31 +45,6 @@ public class Proxy : System.Web.Services.WebService {
         foreach (var line in lines) {
             var items = line.Split(';');
             var id = int.Parse(items[0]);
-            var names = new string[] { "Morning", "Afternoon", "Evening" };
-            var periods = items[7].Split('/');
-
-            var sPeriods = new SessionPeriod[names.Length];
-
-            for (int i = 0; i < periods.Length; i++) {
-                var pName = names[i];
-                var sStrs = periods[i].Split(',');
-
-                var ss = new Session[sStrs.Length];
-                for (var j = 0; j < sStrs.Length; j++) {
-                    var sStr = sStrs[j];
-                    var start = sStr.Substring(0, 4).Insert(2, ":");
-                    var end = sStr.Substring(4, 4).Insert(2, ":");
-                    ss[j] = new Session() {
-                        StartTime = start,
-                        EndTime = end
-                    };
-                }
-
-                sPeriods[i] = new SessionPeriod() {
-                    Name = pName,
-                    Sessions = ss
-                };
-            }
 
             universityInfoCache[id] = new UniversityInfo() {
                 Id = id,
@@ -77,7 +52,8 @@ public class Proxy : System.Web.Services.WebService {
                 HasVerifier = items[2] == "1",
                 FirstWeek = DateTime.Parse(items[5]),
                 WeekCount = int.Parse(items[6]),
-                SessionPeriods = sPeriods
+                SessionPeriods = GetSessionPeriods(items[7]),
+                SummerSessionPeriods = GetSessionPeriods(items[8])
             };
 
             list.Add(new UniversityListInfo() {
@@ -89,6 +65,38 @@ public class Proxy : System.Web.Services.WebService {
         universityList = list.ToArray();
         //Uncomment the following line if using designed components 
         //InitializeComponent(); 
+    }
+
+    private SessionPeriod[] GetSessionPeriods(string sessionsStr) {
+        if (sessionsStr == "") return null;
+
+        var names = new string[] { "Morning", "Afternoon", "Evening" };
+        var periods = sessionsStr.Split('/');
+
+        var sPeriods = new SessionPeriod[names.Length];
+
+        for (int i = 0; i < periods.Length; i++) {
+            var pName = names[i];
+            var sStrs = periods[i].Split(',');
+
+            var ss = new Session[sStrs.Length];
+            for (var j = 0; j < sStrs.Length; j++) {
+                var sStr = sStrs[j];
+                var start = sStr.Substring(0, 4).Insert(2, ":");
+                var end = sStr.Substring(4, 4).Insert(2, ":");
+                ss[j] = new Session() {
+                    StartTime = start,
+                    EndTime = end
+                };
+            }
+
+            sPeriods[i] = new SessionPeriod() {
+                Name = pName,
+                Sessions = ss
+            };
+        }
+
+        return sPeriods;
     }
 
     [WebMethod]
