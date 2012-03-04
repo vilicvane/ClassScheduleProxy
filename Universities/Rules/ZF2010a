@@ -1,0 +1,168 @@
+﻿[Encoding]
+gb2312
+
+[LoginUrl]
+{BaseUrl}default2.aspx
+
+[LoginVerifierUrl]
+
+[LoginMethod]
+POST
+
+[LoginParams][]
+__VIEWSTATE=dDw4ODUxNDk4MDQ7Oz4FW8s1krJjb8RvRniM/4QU4iuTEg==
+RadioButtonList1=%D1%A7%C9%FA
+TextBox1={Username}
+TextBox2={Password}
+Button1=
+lbLanguage=
+
+[LoginErrorKeys][]
+密码错误,UsernamePasswordMismatch
+用户名不存在,UsernamePasswordMismatch
+
+[LoginSuccessKey]
+"js/xtwh.js"
+
+[PreFetchUrl]
+
+[PreFetchMethod]
+
+[PreFetchParams][]
+
+[PreFetchRegexes][]
+
+[FetchUrl]
+{BaseUrl}xskbcx.aspx
+
+[FetchMethod]
+GET
+
+[FetchParams][]
+xh={Username}
+
+[RowsRegex]
+<table id="Table1"[^>]*>([\s\S]+?)</table>[1]
+
+[CellsRegex]
+<tr>([\s\S]+?)</tr>[1]
+
+[CellValueRegex]
+([\s\S]+)[1]
+
+[GetClassesScript]{"
+function getClasses(rowStrs) {
+	var rows = [];
+
+	for (var i = 0; i < rowStrs.length; i++)
+		rows[i] = [];
+
+	for (var i = 0; i < rowStrs.length; i++) {
+		var row = rows[i];
+		var rowStr = rowStrs[i];
+
+		var re = /<td(?:\s[^>]*rowspan="(\d+)")?[^>]*>([\s\S]*?)<\/td>/g;
+		var groups;
+		var j = 0;
+		while (groups = re.exec(rowStr)) {
+			while (row[j]) j++;
+			
+			var span = groups[1] ? Number(groups[1]) : 1;
+			row[j] = {
+				text: groups[2],
+				count: span
+			};
+
+			for (var k = 1; k < span; k++)
+				rows[i + k][j] = {};
+		}
+	}
+
+	var classesMap = {};
+
+	//dayOfWeek
+	for (var j = 2; j < 9; j++) {
+		//session
+		for (var i = 2; i < rows.length; i++) {
+			var info = rows[i][j];
+			if (!info.text) continue;
+			var itemStrs = info.text.split("<br><br>");
+
+			var subMap = {};
+
+			for (var k = 0; k < itemStrs.length; k++) {
+				var items = itemStrs[k].split("<br>");
+				var length = items.length;
+				if (length < 4) continue;
+				var name = items[0];
+				var teacher = items[length - 2].match(/[^\|]+$/);
+				var key = name + "\n" + teacher + "\n" + items[length - 1]; 
+				var weeks = subMap[key] = subMap[key] || [];
+				
+				push(weeks, getWeeks(items[length - 3]));
+			}
+
+			for (var key in subMap) {
+				var infos = key.split("\n");
+				var name = infos[0];
+
+				var list = classesMap.hasOwnProperty(name) ? classesMap[name] : classesMap[name] = [];
+				list.push({
+					dayOfWeek: (j - 1) % 7,
+					teacher: infos[1],
+					location: infos[2],
+					weeks: subMap[key],
+					sessions: getNumbers(i - 1, info.count)
+				});
+			}
+		}
+	}
+
+	var classes = [];
+	for (var name in classesMap)
+		if (classesMap.hasOwnProperty(name))
+			classes.push({
+				name: name,
+				classes: classesMap[name]
+			});
+	
+	return classes;
+}
+
+function push(target, arr) {
+	for (var i = 0; i < arr.length; i++)
+		target.push(arr[i]);
+}
+
+function getWeeks(str) {
+	var groups = str.match(/第(\d+-\d+)周.*?(?:([单双])周)?\}/);
+
+	var d, mod;
+	if (groups[2]) {
+		d = 2;
+		mod = groups[2] == "单" ? 1 : 0;
+	}
+	else {
+		d = 1;
+		mod = 0;
+	}
+
+    var nums = [];
+    var ns = groups[1].split("-");
+    var start = Number(ns[0]);
+    var end = (ns.length > 1 ? Number(ns[1]) : start) + 1;
+    for (var j = start; j < end; j++)
+		if (j % d == mod)
+			nums.push(j);
+    return nums;
+}
+
+function getNumbers(start, count) {
+	var nums = [];
+	for (var i = 0; i < count; i++)
+		nums.push(start + i);
+
+	return nums;
+}
+"}
+
