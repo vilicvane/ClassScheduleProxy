@@ -64,7 +64,8 @@ public static class Solution {
                 var items = line.Split(';');
                 var info = new SolutionInfo() {
                     Name = items[1],
-                    BaseUrl = items[3]
+                    BaseUrl = items[3],
+                    AttachedValues = items[9] != "" ? Json.Parse<string[]>(items[9]) : new string[0]
                 };
                 solutionInfoCache[universityId] = info;
                 return info;
@@ -77,6 +78,7 @@ public static class Solution {
     public class SolutionInfo {
         public string Name { get; set; }
         public string BaseUrl { get; set; }
+        public string[] AttachedValues { get; set; }
         public Dictionary<string, object> Rules { get { return GetRules(Name); } }
     }
 

@@ -10,7 +10,7 @@ gb2312
 POST
 
 [LoginParams][]
-__VIEWSTATE=dDw4ODUxNDk4MDQ7Oz4FW8s1krJjb8RvRniM/4QU4iuTEg==
+__VIEWSTATE={AttachedValues[0]}
 RadioButtonList1=%D1%A7%C9%FA
 TextBox1={Username}
 TextBox2={Password}

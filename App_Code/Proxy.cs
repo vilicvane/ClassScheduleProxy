@@ -178,7 +178,8 @@ public class Proxy : System.Web.Services.WebService {
         var queryVariables = new Dictionary<string, object>() {
                 {"Username", username},
                 {"Password", password},
-                {"Verifier", verifier}
+                {"Verifier", verifier},
+                {"AttachedValues", solutionInfo.AttachedValues}
             };
 
         //login

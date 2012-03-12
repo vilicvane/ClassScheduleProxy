@@ -47,10 +47,10 @@ rad=1
 px=0
 
 [RowsRegex]
-<TABLE [\s\S]+?(?:<tr class=[^BH]>[\s\S]+?)((?:<tr class=[BH]>[\s\S]+?</tr>)+)<tr .+?</table>[1]
+<TABLE [\s\S]+?((?:<tr [^>]*><td [^>]*>\d[\s\S]+?</tr>)+)[\s\S]*</table>[1]
 
 [CellsRegex]
-<tr class=[BH]>([\s\S]+?)</tr>[1]
+<tr [^>]*>([\s\S]+?)</tr>[1]
 
 [CellValueRegex]
 <td(?:\s[^>]*)?>(?:<a .+?>)?([\s\S]*?)(?:</a>)?<br></td>[1]
@@ -82,7 +82,7 @@ function getClasses(rows) {
 		};
 
 		//days and sessions
-		var dsGroups = cells[11].match(/([日一二三四五六])\[(.+)节\]([单双])?/);
+		var dsGroups = cells[11].match(/([日一二三四五六])[\[\(](.+)节[\]\)]([单双])?/);
 		var s = 0;
 		if (dsGroups[3] == "单")
 			s = 1;
