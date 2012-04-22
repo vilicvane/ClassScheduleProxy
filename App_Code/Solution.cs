@@ -72,6 +72,7 @@ public static class Solution {
             }
         }
         reader.Close();
+        reader.Dispose();
         return null;
     }
 
