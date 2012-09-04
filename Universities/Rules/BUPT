@@ -2,7 +2,7 @@
 gb2312
 
 [LoginUrl]
-http://byjw.bupt.edu.cn:8080/jwLoginAction.do
+{BaseUrl}jwLoginAction.do
 
 [LoginVerifierUrl]
 
@@ -30,7 +30,7 @@ type=sso
 [PreFetchRegexes][]
 
 [FetchUrl]
-http://byjw.bupt.edu.cn:8080/xkAction.do
+{BaseUrl}xkAction.do
 
 [FetchMethod]
 GET
