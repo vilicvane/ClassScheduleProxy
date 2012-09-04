@@ -68,6 +68,8 @@ public static class Solution {
                     AttachedValues = items[9] != "" ? Json.Parse<string[]>(items[9]) : new string[0]
                 };
                 solutionInfoCache[universityId] = info;
+                reader.Close();
+                reader.Dispose();
                 return info;
             }
         }
